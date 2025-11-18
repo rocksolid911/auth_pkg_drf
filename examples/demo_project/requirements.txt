@@ -1,0 +1,9 @@
+Django>=4.0
+djangorestframework>=3.14
+PyJWT>=2.8.0
+requests>=2.31.0
+psycopg2-binary>=2.9.0
+django-cors-headers>=4.0.0
+
+# For development
+python-dotenv>=1.0.0
