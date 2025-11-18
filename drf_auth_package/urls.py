@@ -1,58 +1,28 @@
-"""URL configuration for DRF Auth Package."""
+"""URL configuration for DRF Auth Package using Routers."""
 
-from django.urls import path
+from rest_framework.routers import DefaultRouter
 
 from drf_auth_package.views import (
-    EmailResendVerificationView,
-    EmailVerifyView,
-    FacebookLoginView,
-    GoogleLoginView,
-    LoginView,
-    LogoutView,
-    MeView,
-    PasswordChangeView,
-    PasswordResetConfirmView,
-    PasswordResetRequestView,
-    PhoneLoginView,
-    PhoneRequestOTPView,
-    PhoneVerifyOTPView,
-    RegisterView,
-    TokenObtainView,
-    TokenRefreshView,
-    TokenVerifyView,
-    TwitterLoginView,
+    AuthViewSet,
+    EmailViewSet,
+    PasswordViewSet,
+    PhoneViewSet,
+    SocialAuthViewSet,
+    TokenViewSet,
 )
 
 app_name = "drf_auth_package"
 
-urlpatterns = [
-    # Registration and login
-    path("auth/register/", RegisterView.as_view(), name="register"),
-    path("auth/login/", LoginView.as_view(), name="login"),
-    path("auth/logout/", LogoutView.as_view(), name="logout"),
-    path("auth/me/", MeView.as_view(), name="me"),
+# Create router
+router = DefaultRouter(trailing_slash=False)
 
-    # Password management
-    path("auth/password/change/", PasswordChangeView.as_view(), name="password-change"),
-    path("auth/password/reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),
-    path("auth/password/reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
+# Register ViewSets
+# Note: We use empty string as prefix and specify full paths in @action decorators
+router.register(r'auth', AuthViewSet, basename='auth')
+router.register(r'auth/password', PasswordViewSet, basename='password')
+router.register(r'auth/email', EmailViewSet, basename='email')
+router.register(r'auth/phone', PhoneViewSet, basename='phone')
+router.register(r'auth/social', SocialAuthViewSet, basename='social')
+router.register(r'auth/jwt', TokenViewSet, basename='jwt')
 
-    # Email verification
-    path("auth/email/verify/", EmailVerifyView.as_view(), name="email-verify"),
-    path("auth/email/verify/resend/", EmailResendVerificationView.as_view(), name="email-verify-resend"),
-
-    # Phone authentication
-    path("auth/phone/request-otp/", PhoneRequestOTPView.as_view(), name="phone-request-otp"),
-    path("auth/phone/verify-otp/", PhoneVerifyOTPView.as_view(), name="phone-verify-otp"),
-    path("auth/phone/login/", PhoneLoginView.as_view(), name="phone-login"),
-
-    # Social authentication
-    path("auth/social/google/", GoogleLoginView.as_view(), name="google-login"),
-    path("auth/social/facebook/", FacebookLoginView.as_view(), name="facebook-login"),
-    path("auth/social/twitter/", TwitterLoginView.as_view(), name="twitter-login"),
-
-    # JWT endpoints
-    path("auth/jwt/token/", TokenObtainView.as_view(), name="token-obtain"),
-    path("auth/jwt/token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
-    path("auth/jwt/token/verify/", TokenVerifyView.as_view(), name="token-verify"),
-]
+urlpatterns = router.urls

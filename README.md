@@ -14,6 +14,28 @@ A production-ready, reusable Django REST Framework authentication package with s
 - **Production Ready**: Includes proper logging, security features, and error handling
 - **Type Hints**: Modern Python code with type hints throughout
 - **Extensible**: Easy to customize and extend for your specific needs
+- **DRF Best Practices**: Built with ViewSets and Routers for clean, maintainable API architecture
+
+## Architecture
+
+This package follows Django REST Framework best practices:
+
+- **ViewSets**: All API endpoints are organized into logical ViewSets for better code organization
+- **Routers**: Automatic URL routing using DRF's DefaultRouter
+- **Class-Based Views**: Leveraging DRF's powerful ViewSet classes
+- **Service Layer**: Business logic separated into dedicated service classes
+- **Type Hints**: Full type annotations for better IDE support and code quality
+
+### ViewSet Organization
+
+The package organizes endpoints into 6 main ViewSets:
+
+1. **AuthViewSet** - Core authentication (register, login, logout, me)
+2. **PasswordViewSet** - Password management (change, reset, reset confirm)
+3. **EmailViewSet** - Email verification (verify, resend)
+4. **PhoneViewSet** - Phone authentication (request OTP, verify OTP, login)
+5. **SocialAuthViewSet** - Social logins (Google, Facebook, Twitter)
+6. **TokenViewSet** - JWT operations (obtain, refresh, verify)
 
 ## Installation
 

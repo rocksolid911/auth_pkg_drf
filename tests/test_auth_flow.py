@@ -14,7 +14,7 @@ class RegistrationTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.register_url = reverse("drf_auth_package:register")
+        self.register_url = reverse("drf_auth_package:auth-register")
 
     def test_register_user_success(self):
         """Test successful user registration."""
@@ -71,7 +71,7 @@ class LoginTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.login_url = reverse("drf_auth_package:login")
+        self.login_url = reverse("drf_auth_package:auth-login")
         self.user = User.objects.create_user(
             email="test@example.com",
             password="TestPass123",
@@ -122,7 +122,7 @@ class MeEndpointTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.me_url = reverse("drf_auth_package:me")
+        self.me_url = reverse("drf_auth_package:auth-me")
         self.user = User.objects.create_user(
             email="test@example.com",
             password="TestPass123",
@@ -133,7 +133,7 @@ class MeEndpointTests(TestCase):
     def test_me_authenticated(self):
         """Test accessing me endpoint when authenticated."""
         # Login to get token
-        login_url = reverse("drf_auth_package:login")
+        login_url = reverse("drf_auth_package:auth-login")
         login_data = {
             "email": "test@example.com",
             "password": "TestPass123",
@@ -168,7 +168,7 @@ class PasswordChangeTests(TestCase):
         )
 
         # Get authentication token
-        login_url = reverse("drf_auth_package:login")
+        login_url = reverse("drf_auth_package:auth-login")
         login_data = {
             "email": "test@example.com",
             "password": "OldPass123",
@@ -211,9 +211,9 @@ class JWTTokenTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.token_url = reverse("drf_auth_package:token-obtain")
-        self.refresh_url = reverse("drf_auth_package:token-refresh")
-        self.verify_url = reverse("drf_auth_package:token-verify")
+        self.token_url = reverse("drf_auth_package:jwt-obtain")
+        self.refresh_url = reverse("drf_auth_package:jwt-refresh")
+        self.verify_url = reverse("drf_auth_package:jwt-verify")
         self.user = User.objects.create_user(
             email="test@example.com",
             password="TestPass123"

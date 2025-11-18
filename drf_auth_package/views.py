@@ -1,4 +1,4 @@
-"""Views for DRF Auth Package."""
+"""ViewSets for DRF Auth Package."""
 
 import logging
 
@@ -6,11 +6,11 @@ import jwt
 from django.contrib.auth import logout
 from django.core.mail import send_mail
 from django.urls import reverse
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from drf_auth_package import conf
 from drf_auth_package.models import EmailVerificationToken, PasswordResetToken, User
@@ -58,15 +58,21 @@ def get_user_agent(request: Request) -> str:
     return request.META.get("HTTP_USER_AGENT", "")
 
 
-class RegisterView(APIView):
-    """User registration endpoint."""
+class AuthViewSet(viewsets.ViewSet):
+    """
+    ViewSet for core authentication operations.
 
-    permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+    Actions:
+    - register: User registration
+    - login: User login
+    - logout: User logout
+    - me: Get current user info
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='register')
+    def register(self, request: Request) -> Response:
         """Register a new user."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = RegisterSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -82,11 +88,6 @@ class RegisterView(APIView):
                 token=token,
                 expires_at=expiry
             )
-
-            # TODO: Send email with verification link
-            # Example: verification_link = request.build_absolute_uri(
-            #     reverse('auth-email-verify') + f'?token={token}'
-            # )
             logger.info(f"Email verification token created for {user.email}: {token}")
 
         # Return user data and tokens based on auth mode
@@ -109,16 +110,10 @@ class RegisterView(APIView):
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
-
-class LoginView(APIView):
-    """User login endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = LoginSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='login')
+    def login(self, request: Request) -> Response:
         """Log in a user."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = LoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -175,13 +170,8 @@ class LoginView(APIView):
                 "message": "Login successful.",
             }, status=status.HTTP_200_OK)
 
-
-class LogoutView(APIView):
-    """User logout endpoint."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], url_path='logout')
+    def logout(self, request: Request) -> Response:
         """Log out a user."""
         auth_mode = conf.AUTH_BACKEND_MODE
 
@@ -197,28 +187,28 @@ class LogoutView(APIView):
             "message": "Logout successful."
         }, status=status.HTTP_200_OK)
 
-
-class MeView(APIView):
-    """Get current user endpoint."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request: Request) -> Response:
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='me')
+    def me(self, request: Request) -> Response:
         """Get current user information."""
         return Response({
             "user": UserSerializer(request.user).data
         }, status=status.HTTP_200_OK)
 
 
-class PasswordChangeView(APIView):
-    """Password change endpoint."""
+class PasswordViewSet(viewsets.ViewSet):
+    """
+    ViewSet for password management operations.
 
-    permission_classes = [IsAuthenticated]
-    serializer_class = PasswordChangeSerializer
+    Actions:
+    - change: Change user password
+    - reset: Request password reset
+    - reset_confirm: Confirm password reset with token
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], url_path='change')
+    def change(self, request: Request) -> Response:
         """Change user password."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PasswordChangeSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -246,16 +236,10 @@ class PasswordChangeView(APIView):
             "message": "Password changed successfully. Please log in again."
         }, status=status.HTTP_200_OK)
 
-
-class PasswordResetRequestView(APIView):
-    """Password reset request endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = PasswordResetRequestSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='reset')
+    def reset(self, request: Request) -> Response:
         """Request a password reset."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PasswordResetRequestSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -273,10 +257,6 @@ class PasswordResetRequestView(APIView):
                 expires_at=expiry
             )
 
-            # TODO: Send email with reset link
-            # Example: reset_link = request.build_absolute_uri(
-            #     reverse('auth-password-reset-confirm') + f'?token={token}'
-            # )
             logger.info(f"Password reset token created for {user.email}: {token}")
 
         except User.DoesNotExist:
@@ -288,16 +268,10 @@ class PasswordResetRequestView(APIView):
             "message": "If an account with that email exists, a password reset link has been sent."
         }, status=status.HTTP_200_OK)
 
-
-class PasswordResetConfirmView(APIView):
-    """Password reset confirmation endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = PasswordResetConfirmSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='reset/confirm')
+    def reset_confirm(self, request: Request) -> Response:
         """Confirm password reset with token."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PasswordResetConfirmSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -340,15 +314,19 @@ class PasswordResetConfirmView(APIView):
             )
 
 
-class EmailVerifyView(APIView):
-    """Email verification endpoint."""
+class EmailViewSet(viewsets.ViewSet):
+    """
+    ViewSet for email verification operations.
 
-    permission_classes = [AllowAny]
-    serializer_class = EmailVerificationSerializer
+    Actions:
+    - verify: Verify email with token
+    - resend: Resend verification email
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='verify')
+    def verify(self, request: Request) -> Response:
         """Verify email with token."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = EmailVerificationSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -385,13 +363,8 @@ class EmailVerifyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
-class EmailResendVerificationView(APIView):
-    """Resend email verification endpoint."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated], url_path='verify/resend')
+    def resend(self, request: Request) -> Response:
         """Resend email verification."""
         user = request.user
 
@@ -412,7 +385,6 @@ class EmailResendVerificationView(APIView):
             expires_at=expiry
         )
 
-        # TODO: Send email
         logger.info(f"Email verification resent for {user.email}: {token}")
 
         return Response({
@@ -420,15 +392,20 @@ class EmailResendVerificationView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-class PhoneRequestOTPView(APIView):
-    """Phone OTP request endpoint."""
+class PhoneViewSet(viewsets.ViewSet):
+    """
+    ViewSet for phone authentication operations.
 
-    permission_classes = [AllowAny]
-    serializer_class = PhoneOTPRequestSerializer
+    Actions:
+    - request_otp: Request OTP for phone verification
+    - verify_otp: Verify phone OTP
+    - login: Login with phone number and OTP
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='request-otp')
+    def request_otp(self, request: Request) -> Response:
         """Request OTP for phone verification."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PhoneOTPRequestSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -445,16 +422,10 @@ class PhoneRequestOTPView(APIView):
         else:
             return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
 
-
-class PhoneVerifyOTPView(APIView):
-    """Phone OTP verification endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = PhoneOTPVerifySerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='verify-otp')
+    def verify_otp(self, request: Request) -> Response:
         """Verify phone OTP."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PhoneOTPVerifySerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -469,16 +440,10 @@ class PhoneVerifyOTPView(APIView):
         else:
             return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
 
-
-class PhoneLoginView(APIView):
-    """Phone-based login endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = PhoneLoginSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='login')
+    def login(self, request: Request) -> Response:
         """Log in using phone number and OTP."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = PhoneLoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -508,15 +473,20 @@ class PhoneLoginView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class GoogleLoginView(APIView):
-    """Google OAuth login endpoint."""
+class SocialAuthViewSet(viewsets.ViewSet):
+    """
+    ViewSet for social authentication operations.
 
-    permission_classes = [AllowAny]
-    serializer_class = GoogleLoginSerializer
+    Actions:
+    - google: Login with Google OAuth
+    - facebook: Login with Facebook OAuth
+    - twitter: Login with Twitter OAuth
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='google')
+    def google(self, request: Request) -> Response:
         """Log in with Google OAuth."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = GoogleLoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -544,16 +514,10 @@ class GoogleLoginView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
-
-class FacebookLoginView(APIView):
-    """Facebook OAuth login endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = FacebookLoginSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='facebook')
+    def facebook(self, request: Request) -> Response:
         """Log in with Facebook OAuth."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = FacebookLoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -581,16 +545,10 @@ class FacebookLoginView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
-
-class TwitterLoginView(APIView):
-    """Twitter OAuth login endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = TwitterLoginSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='twitter')
+    def twitter(self, request: Request) -> Response:
         """Log in with Twitter OAuth."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = TwitterLoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -620,15 +578,20 @@ class TwitterLoginView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class TokenObtainView(APIView):
-    """JWT token obtain endpoint."""
+class TokenViewSet(viewsets.ViewSet):
+    """
+    ViewSet for JWT token management operations.
 
-    permission_classes = [AllowAny]
-    serializer_class = LoginSerializer
+    Actions:
+    - obtain: Obtain JWT token pair
+    - refresh: Refresh access token
+    - verify: Verify token validity
+    """
 
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='token')
+    def obtain(self, request: Request) -> Response:
         """Obtain JWT token pair."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = LoginSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -661,16 +624,10 @@ class TokenObtainView(APIView):
 
         return Response(tokens, status=status.HTTP_200_OK)
 
-
-class TokenRefreshView(APIView):
-    """JWT token refresh endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = TokenRefreshSerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='token/refresh')
+    def refresh(self, request: Request) -> Response:
         """Refresh JWT access token."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = TokenRefreshSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -690,16 +647,10 @@ class TokenRefreshView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-
-class TokenVerifyView(APIView):
-    """JWT token verification endpoint."""
-
-    permission_classes = [AllowAny]
-    serializer_class = TokenVerifySerializer
-
-    def post(self, request: Request) -> Response:
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='token/verify')
+    def verify(self, request: Request) -> Response:
         """Verify JWT token."""
-        serializer = self.serializer_class(data=request.data)
+        serializer = TokenVerifySerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
