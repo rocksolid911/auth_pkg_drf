@@ -1,0 +1,109 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drf-auth-package"
+version = "1.0.0"
+description = "Production-ready authentication module for Django REST Framework with email, phone, and social login support"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+keywords = [
+    "django",
+    "django-rest-framework",
+    "authentication",
+    "jwt",
+    "oauth",
+    "social-login",
+    "phone-auth",
+    "email-auth"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.1",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "Django>=4.0",
+    "djangorestframework>=3.14",
+    "PyJWT>=2.8.0",
+    "requests>=2.31.0",
+    "psycopg2-binary>=2.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-django>=4.5.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "django-stubs>=4.2.0",
+    "djangorestframework-stubs>=3.14.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/drf-auth-package"
+Documentation = "https://github.com/yourusername/drf-auth-package/blob/main/README.md"
+Repository = "https://github.com/yourusername/drf-auth-package"
+Issues = "https://github.com/yourusername/drf-auth-package/issues"
+
+[tool.setuptools]
+packages = ["drf_auth_package"]
+
+[tool.setuptools.package-data]
+drf_auth_package = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --cov=drf_auth_package --cov-report=html --cov-report=term"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+
+[[tool.mypy.overrides]]
+module = "drf_auth_package.migrations.*"
+ignore_errors = true
